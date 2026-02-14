@@ -1,0 +1,75 @@
+<li
+  class="token-combatant {{ifThen isCurrent 'active' ''}}"
+  data-turn="{{turn}}"
+  data-flip-id="momentum-token-combatant-{{combatant.id}}"
+  data-combatant-id="{{combatant.id}}"
+>
+
+  <img src="{{combatant.img}}" alt="{{combatant.name}}" data-action="combatantClick" class="combatant-img" />
+  {{#if isCurrent}}
+    <svg
+      class="spotlight-svg"
+      viewBox="28 28 310.5 132"
+      xmlns="http://www.w3.org/2000/svg"
+    >
+      <defs>
+        <linearGradient
+          id="momentum-dh-linear-gradient-spotlight"
+          x1="0%"
+          y1="0%"
+          x2="100%"
+          y2="0%"
+          gradientUnits="userSpaceOnUse"
+        >
+          <stop class="start-stop" stop-color="var(--start-color)" />
+          <stop
+            class="stop-middle"
+            offset="20%"
+            stop-color="var(--start-color)"
+          />
+          <stop
+            class="end-stop"
+            offset="100%"
+            stop-color="var(--end-color)"
+            stop-opacity="0"
+          />
+        </linearGradient>
+      </defs>
+      <path
+        fill="url(#momentum-dh-linear-gradient-spotlight)"
+        d="M338.5 100L94.0002 160L93.1464 159.995C57.0888 159.538 28 130.166 28 94C28 57.5492 57.5493 28 94.0002 28L338.5 88.0001V100Z"
+      />
+    </svg>
+  {{else}}
+    {{#if isRequesting}}
+      <div class="request-orbit">
+        <div class="satellite"></div>
+      </div>
+    {{/if}}
+
+    {{#if (and (not combatant.isNPC) userIsGM)}}
+     <a
+      class="icon spotlight-anchor"
+      data-action="requestSpotlight"
+      data-tooltip="Request Spotligh"
+      data-tooltip-direction="RIGHT"
+    >
+      <i
+        class="fa-solid fa-hand"
+      ></i>
+    </a>
+    {{else}}
+    <a
+      class="icon spotlight-anchor"
+      data-action="setSpotlight"
+      data-tooltip="Give The Spotligh"
+      data-tooltip-direction="{{ifThen combatant.isNPC 'LEFT' 'RIGHT'}}"
+    >
+      <i
+        class="fa-solid
+          {{ifThen combatant.isNPC 'fa-skull' 'fa-hand-sparkles'}}"
+      ></i>
+    </a>
+    {{/if}}
+  {{/if}}
+</li>

@@ -1,0 +1,21 @@
+{
+  "name": "momentum-dh",
+  "version": "1.0.0",
+  "scripts": {
+    "build": "rollup -c && node ./tools/YML-to-LDB.mjs",
+    "compilePacks": "node ./tools/YML-to-LDB.mjs",
+    "extractPacks": "node ./tools/LDB-to-YML.mjs",
+    "create-symlink": "node tools/create-symlink.mjs"
+  },
+  "author": "JoaquinP",
+  "license": "MIT",
+  "dependencies": {
+    "eslint": "^9.39.2",
+    "rollup": "^4.36.0"
+  },
+  "homepage": "https://github.com/joaquinpereyra98/momentum-dh",
+  "description": "",
+  "devDependencies": {
+    "@foundryvtt/foundryvtt-cli": "^2.0.0"
+  }
+}

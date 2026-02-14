@@ -1,0 +1,155 @@
+.momentum-dh {
+  --golden-color: #f4ac22;
+  --dark-golden-color: #554b28;
+  --light-golden-color: #ffe078;
+  --violet-color: #614ec3;
+  --dark-violet-color: #372c6e;
+  --light-violet-color: #b0a7e1;
+
+  &.unlist,
+  .unlist {
+    list-style: none;
+    padding: 0;
+    margin: 0;
+
+    li {
+      margin: 0;
+    }
+  }
+
+  &.spotlight-tracker {
+    position: absolute;
+    display: flex;
+    flex-direction: column;
+    gap: 12px;
+    pointer-events: all;
+    transition: transform 0.4s cubic-bezier(0.175, 0.885, 0.32, 1.275), right 0.3s ease;
+    --color-shadow-primary: var(--primary-side-color);
+
+    .token-combatant {
+      cursor: pointer;
+      position: relative;
+      display: flex;
+      align-items: stretch;
+
+      .combatant-img {
+        --size: 5vw;
+        aspect-ratio: 1 / 1;
+        width: var(--size);
+        height: var(--size);
+        flex: 0 0 var(--size);
+        border-radius: 50%;
+        object-fit: cover;
+        object-position: center top;
+        border: 3px solid var(--secondary-side-color);
+        background: #222;
+        box-shadow: 0 0 8px var(--primary-side-color);
+      }
+
+      &.active {
+        .combatant-img {
+          --size: 7.5vw;
+          border-color: var(--secondary-side-color);
+          box-shadow: 0 0 5px var(--primary-side-color), inset 0 0 5px var(--secondary-side-color);
+          filter: saturate(1.2);
+        }
+      }
+
+      a.spotlight-anchor {
+        position: absolute;
+        height: 100%;
+        width: 100%;
+        z-index: -1;
+        left: 50%;
+        top: 50%;
+        opacity: 0;
+        display: flex;
+        justify-content: center;
+        align-items: center;
+        font-size: 2vw;
+        color: white;
+        filter: drop-shadow(0 0 8px var(--color-shadow-primary));
+        pointer-events: none;
+
+        &::before {
+          content: '';
+          position: absolute;
+          inset: 0;
+          transform: scale(1.15);
+        }
+      }
+
+      svg.spotlight-svg {
+        position: absolute;
+        height: 100%;
+        width: auto;
+        top: 50%;
+        transform: translateY(-50%);
+        left: 0;
+        z-index: -1;
+        pointer-events: none;
+        filter: brightness(0.9) blur(9px) saturate(1.2) drop-shadow(0 0 4px rgba(255, 255, 255, 0.2));
+        --start-color: var(--primary-side-color);
+        --end-color: var(--primary-side-color);
+      }
+
+      .request-orbit {
+        position: absolute;
+        inset: -5px;
+        pointer-events: none;
+        z-index: 5;
+        display: flex;
+        justify-content: center;
+        align-items: flex-start;
+      }
+
+      .satellite {
+        width: 0.8vw;
+        height: 0.8vw;
+        background-color: var(--primary-side-color);
+        border-radius: 50%;
+        border: 2px solid var(--secondary-side-color);
+        box-shadow: 0 0 10px var(--secondary-side-color);
+      }
+
+    }
+
+    &.left-zone {
+      --primary-side-color: var(--golden-color);
+      --secondary-side-color: var(--dark-golden-color);
+      top: calc(var(--control-size) + 16px);
+      margin-left: 15px;
+      align-items: flex-start;
+    }
+
+    &.right-zone {
+      --primary-side-color: var(--violet-color);
+      --secondary-side-color: var(--dark-violet-color);
+      right: 300px;
+      margin-right: 15px;
+      align-items: flex-end;
+
+      .token-combatant {
+        flex-direction: row-reverse;
+      }
+
+      svg.spotlight-svg {
+        left: auto;
+        right: 0;
+        transform: translateY(-50%) rotate(180deg);
+      }
+
+    }
+  }
+}
+
+
+/* UI Interactions */
+#ui-right:has(#effects-display:not([hidden])) .momentum-dh.right-zone {
+  right: 362px;
+}
+
+#ui-right:has(#countdowns.icon-only) .momentum-dh.right-zone {
+  transform: translateX(120px);
+  transition-delay: 0.3s;
+}
