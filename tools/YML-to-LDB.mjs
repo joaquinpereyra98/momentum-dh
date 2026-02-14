@@ -1,5 +1,6 @@
 import { compilePack } from "@foundryvtt/foundryvtt-cli";
-import { promises as fs } from "fs";
+import fs from "node:fs/promises";
+import { existsSync } from "node:fs";
 
 const SRC_PATH = "./packs-src";
 const yaml = true;

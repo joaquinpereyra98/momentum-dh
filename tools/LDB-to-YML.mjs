@@ -1,5 +1,6 @@
 import { extractPack } from "@foundryvtt/foundryvtt-cli";
-import { promises as fs, existsSync } from "fs";
+import fs from "node:fs/promises";
+import { existsSync } from "node:fs";
 import path from "path";
 
 const MODULE_ID = process.cwd();
