@@ -68,6 +68,17 @@ export default class SpotlightTracker extends ApplicationV2 {
     return Promise.all(tasks);
   }
 
+  /**
+   * Check whether all SpotlightTracker instances are currently rendered.
+   * @returns {boolean} True if all instances are rendered, otherwise false.
+   */
+  static get isRendered() {
+    for (const instance of this.instances.values()) {
+      if (instance.state !== this.RENDER_STATES.RENDERED) return false;
+    }
+    return true;
+  }
+
   /* -------------------------------------------- */
   /* Properties & Getters                         */
   /* -------------------------------------------- */
@@ -126,7 +137,8 @@ export default class SpotlightTracker extends ApplicationV2 {
             turn: index,
             isCurrent: index === combat.turn,
             isRequesting: requesting,
-            spotlightOrder: requestOrderIndex === 0 ? Infinity : requestOrderIndex,
+            spotlightOrder:
+              requestOrderIndex === 0 ? Infinity : requestOrderIndex,
             userIsGM: game.user.isGM,
           });
         }
@@ -171,10 +183,32 @@ export default class SpotlightTracker extends ApplicationV2 {
 
   /* -------------------------------------------- */
 
-  /** @override */
+  /**
+   * @override
+   * @param {String} result
+   * @param {HTMLElement} content
+   */
   _replaceHTML(result, content, _options) {
     const state = Flip.getState(content.children);
+
+    const orbitStates = new Map();
+    content.querySelectorAll(".request-orbit").forEach((el) => {
+      orbitStates.set(el.dataset.orbitId, gsap.getProperty(el, "rotation"));
+    });
+
     content.innerHTML = result;
+
+    const newOrbits = content.querySelectorAll(".request-orbit");
+    if (newOrbits.length) {
+      gsap.set(newOrbits, {
+        rotation: (_, target) => orbitStates.get(target.dataset.orbitId),
+      });
+
+      gsap.set(content.querySelectorAll(".request-orbit .satellite"), {
+        opacity: 0.8,
+        scale: 0.9,
+      });
+    }
 
     this.#listItems = content.querySelectorAll(".token-combatant");
 
@@ -217,7 +251,7 @@ export default class SpotlightTracker extends ApplicationV2 {
     }
   }
 
-  /** @override */
+  /**@inheritdoc */
   async _onRender(context, options) {
     await super._onRender(context, options);
 
@@ -290,34 +324,32 @@ export default class SpotlightTracker extends ApplicationV2 {
    */
   _initOrbitAnimations() {
     const orbits = this.element.querySelectorAll(".request-orbit");
+    const satellites = this.element.querySelectorAll(
+      ".request-orbit .satellite",
+    );
 
-    orbits.forEach((orbit) => {
-      gsap.to(orbit, {
-        rotation: 360,
+    if (orbits.length) {
+      gsap.to(orbits, {
+        rotation: "+=360",
         duration: 3,
         repeat: -1,
         ease: "none",
       });
-
-      const satellite = orbit.querySelector(".satellite");
-      if (satellite) {
-        gsap
-          .timeline()
-          .fromTo(
-            satellite,
-            { scale: 0, opacity: 0 },
-            { scale: 0.9, opacity: 0.8, duration: 1.5, ease: "back.out(2)" },
-          )
-          .to(satellite, {
-            scale: 1.1,
-            opacity: 1,
-            duration: 0.7,
-            repeat: -1,
-            yoyo: true,
-            ease: "sine.inOut",
-          });
-      }
-    });
+      const tl = gsap.timeline();
+      tl.to(satellites, {
+        scale: 0.9,
+        opacity: 0.8,
+        duration: 1.5,
+        ease: "back.out(2)",
+      }).to(satellites, {
+        scale: 1.1,
+        opacity: 1,
+        duration: 0.7,
+        repeat: -1,
+        yoyo: true,
+        ease: "sine.inOut",
+      });
+    }
   }
 
   /**@override */

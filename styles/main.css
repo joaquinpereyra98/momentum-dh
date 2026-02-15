@@ -110,6 +110,8 @@
         border-radius: 50%;
         border: 2px solid var(--secondary-side-color);
         box-shadow: 0 0 10px var(--secondary-side-color);
+        transform: scale(0);
+        opacity: 0;
       }
 
     }

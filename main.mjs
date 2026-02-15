@@ -1,6 +1,5 @@
 import { Flip } from "/scripts/greensock/esm/all.js";
 import * as apps from "./module/apps/_module.mjs";
-import * as hooks from "./module/hooks/_module.mjs";
 
 import { MODULE_ID, SPOTLIGHT_TRACKER_ID } from "./module/constants.mjs";
 
@@ -38,6 +37,25 @@ Hooks.on("ready", () => {
   if (game.combat) momentum.apps.SpotlightTracker.renderAll({ force: true });
 });
 
-Hooks.on("renderCombatTracker", () => momentum.apps.SpotlightTracker.renderAll());
-Hooks.on("deleteCombat", hooks.onDeleteCombat);
-Hooks.on("updateCombat", hooks.onUpdateCombat)
+/**
+ *
+ * @param {foundry.documents.Combat|foundry.documents.Combatant} document
+ */
+const renderSpotlight = (document) => {
+  const { SpotlightTracker } = momentum.apps;
+  const isRendered = SpotlightTracker.isRendered;
+  const combat =
+    document instanceof foundry.documents.Combat ? document : document.combat;
+  if (combat === game.combat) SpotlightTracker.renderAll({ force: isRendered });
+};
+
+[
+  "createCombatant",
+  "deleteCombatant",
+  "updateCombatant",
+  "createCombat",
+  "deleteCombat",
+  "updateCombat",
+].forEach((hook) => {
+  Hooks.on(hook, renderSpotlight);
+});
