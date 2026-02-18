@@ -130,7 +130,8 @@ export default class SpotlightTracker extends ApplicationV2 {
     return combat.turns
       .reduce((acc, combatant, index) => {
         const { isNPC, system } = combatant;
-        const { requesting, requestOrderIndex } = system.spotlight;
+        const { requesting = false, requestOrderIndex = 0 } =
+          system?.spotlight ?? {};
         if (isNPC !== this.isPCTracker) {
           acc.push({
             combatant,

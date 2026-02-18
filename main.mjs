@@ -1,5 +1,6 @@
 import { Flip } from "/scripts/greensock/esm/all.js";
 import * as apps from "./module/apps/_module.mjs";
+import * as hooks from "./module/hooks/_module.mjs";
 
 import { MODULE_ID, SPOTLIGHT_TRACKER_ID } from "./module/constants.mjs";
 
@@ -46,7 +47,9 @@ const renderSpotlight = (document) => {
   const isRendered = SpotlightTracker.isRendered;
   const combat =
     document instanceof foundry.documents.Combat ? document : document.combat;
-  if (combat === game.combat) SpotlightTracker.renderAll({ force: isRendered });
+  if (combat === game.combat)
+    SpotlightTracker.renderAll({ force: !isRendered });
+  if (!game.combat) SpotlightTracker.closeAll();
 };
 
 [
@@ -59,3 +62,5 @@ const renderSpotlight = (document) => {
 ].forEach((hook) => {
   Hooks.on(hook, renderSpotlight);
 });
+
+Hooks.on("renderCombatTracker", hooks.onRenderCombatTracker);
