@@ -34,9 +34,11 @@
 
       .combatant-img {
         --size: 5vw;
-        aspect-ratio: 1 / 1;
+        aspect-ratio: 1;
         width: var(--size);
+        min-width: 55px;
         height: var(--size);
+        min-height: 55px;
         flex: 0 0 var(--size);
         border-radius: 50%;
         object-fit: cover;
@@ -49,10 +51,12 @@
       &.active {
         .combatant-img {
           --size: 7.5vw;
+          min-width: 82px;
+          min-height: 82px;
           border-color: var(--secondary-side-color);
           box-shadow: 0 0 5px var(--primary-side-color), inset 0 0 5px var(--secondary-side-color);
           filter: saturate(1.2);
-        }
+        } 
       }
 
       a.spotlight-anchor {
@@ -138,7 +142,7 @@
       svg.spotlight-svg {
         left: auto;
         right: 0;
-        transform: translateY(-50%) rotate(180deg);
+        transform: translateY(-50%) scaleX(-1);
       }
 
     }
@@ -146,7 +150,6 @@
 }
 
 
-/* UI Interactions */
 #ui-right:has(#effects-display:not([hidden])) .momentum-dh.right-zone {
   right: 362px;
 }

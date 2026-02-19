@@ -4,8 +4,12 @@
   data-flip-id="momentum-token-combatant-{{combatant.id}}"
   data-combatant-id="{{combatant.id}}"
 >
-
-  <img src="{{combatant.img}}" alt="{{combatant.name}}" data-action="combatantClick" class="combatant-img" />
+  <img
+    src="{{combatant.img}}"
+    alt="{{combatant.name}}"
+    data-action="combatantClick"
+    class="combatant-img"
+  />
   {{#if isCurrent}}
     <svg
       class="spotlight-svg"
@@ -47,29 +51,29 @@
       </div>
     {{/if}}
 
-    {{#if (and (not combatant.isNPC) userIsGM)}}
-     <a
-      class="icon spotlight-anchor"
-      data-action="requestSpotlight"
-      data-tooltip="Request Spotligh"
-      data-tooltip-direction="RIGHT"
-    >
-      <i
-        class="fa-solid fa-hand"
-      ></i>
-    </a>
+    {{#if userIsGM}}
+      <a
+        class="icon spotlight-anchor"
+        data-action="setSpotlight"
+        data-tooltip="Give The Spotligh"
+        data-tooltip-direction="{{ifThen combatant.isNPC 'LEFT' 'RIGHT'}}"
+      >
+        <i
+          class="fa-solid
+            {{ifThen combatant.isNPC 'fa-skull' 'fa-hand-sparkles'}}"
+        ></i>
+      </a>
     {{else}}
-    <a
-      class="icon spotlight-anchor"
-      data-action="setSpotlight"
-      data-tooltip="Give The Spotligh"
-      data-tooltip-direction="{{ifThen combatant.isNPC 'LEFT' 'RIGHT'}}"
-    >
-      <i
-        class="fa-solid
-          {{ifThen combatant.isNPC 'fa-skull' 'fa-hand-sparkles'}}"
-      ></i>
-    </a>
+      {{#if combatant.actor.isOwner}}
+        <a
+          class="icon spotlight-anchor"
+          data-action="requestSpotlight"
+          data-tooltip="Request Spotligh"
+          data-tooltip-direction="RIGHT"
+        >
+          <i class="fa-solid fa-hand"></i>
+        </a>
+      {{/if}}
     {{/if}}
   {{/if}}
 </li>
