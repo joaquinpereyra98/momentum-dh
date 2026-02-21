@@ -422,20 +422,27 @@ export default class SpotlightTracker extends ApplicationV2 {
    */
   #createAnchorHover(anchor) {
     gsap.killTweensOf(anchor);
-    gsap.set(anchor, { xPercent: -50, yPercent: -50, x: 0, opacity: 0 });
+    gsap.set(anchor, {
+      xPercent: -50,
+      yPercent: -50,
+      x: 0,
+      opacity: 0,
+      left: "50%",
+      top: "50%",
+    });
 
     const tl = gsap
       .timeline({ paused: true })
       .to(anchor, {
         pointerEvents: "all",
         opacity: 1,
-        x: this.isPCTracker ? "80%" : "-80%",
+        x: this.isPCTracker ? "4rem" : "-4rem",
         duration: 0.5,
-        ease: "back.out(1.7)",
+        ease: "ease.in",
         zIndex: 5,
       })
       .to(anchor, {
-        x: this.isPCTracker ? "+=3" : "-=3",
+        x: this.isPCTracker ? "4.3rem" : "-4.3rem",
         duration: 0.1,
         repeat: 5,
         yoyo: true,

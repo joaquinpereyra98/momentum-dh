@@ -33,13 +33,13 @@
       align-items: stretch;
 
       .combatant-img {
-        --size: 5vw;
+          --size: 85px;
         aspect-ratio: 1;
-        width: var(--size);
         min-width: 55px;
+        width: var(--size);
         height: var(--size);
-        min-height: 55px;
         flex: 0 0 var(--size);
+        min-height: 55px;
         border-radius: 50%;
         object-fit: cover;
         object-position: center top;
@@ -50,13 +50,13 @@
 
       &.active {
         .combatant-img {
-          --size: 7.5vw;
+            --size: 127px;
           min-width: 82px;
           min-height: 82px;
           border-color: var(--secondary-side-color);
           box-shadow: 0 0 5px var(--primary-side-color), inset 0 0 5px var(--secondary-side-color);
           filter: saturate(1.2);
-        } 
+        }
       }
 
       a.spotlight-anchor {
@@ -70,7 +70,7 @@
         display: flex;
         justify-content: center;
         align-items: center;
-        font-size: 2vw;
+        font-size: 35px;
         color: white;
         filter: drop-shadow(0 0 8px var(--color-shadow-primary));
         pointer-events: none;
@@ -99,7 +99,7 @@
 
       .request-orbit {
         position: absolute;
-        inset: -5px;
+        inset: -8px;
         pointer-events: none;
         z-index: 5;
         display: flex;
@@ -108,8 +108,8 @@
       }
 
       .satellite {
-        width: 0.8vw;
-        height: 0.8vw;
+        width: 16px;
+        height: 16px;
         background-color: var(--primary-side-color);
         border-radius: 50%;
         border: 2px solid var(--secondary-side-color);
