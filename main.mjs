@@ -17,7 +17,7 @@ Hooks.on("init", () => {
 
   CONFIG.ui[SPOTLIGHT_TRACKER_ID] = apps.SpotlightTracker;
 
-  console.log(`${MODULE_ID} | API initialized`);
+  console.log(`${MODULE_ID} | Initialized`);
 });
 
 Hooks.on("ready", () => {

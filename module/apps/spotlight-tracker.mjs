@@ -123,26 +123,35 @@ export default class SpotlightTracker extends ApplicationV2 {
    * Prepares the turn data for the template
    * @returns {Array<{combatant: foundry.documents.Combatant, isCurrent: Boolean, }>}
    */
-  prepareTurn() {
+  prepareTurns() {
     const combat = this.activeCombat;
     if (!combat) return [];
 
     return combat.turns
       .reduce((acc, combatant, index) => {
-        const { isNPC, system } = combatant;
+        if (combatant.isNPC === this.isPCTracker || !combatant.visible)
+          return acc;
+
         const { requesting = false, requestOrderIndex = 0 } =
-          system?.spotlight ?? {};
-        if (isNPC !== this.isPCTracker) {
-          acc.push({
-            combatant,
-            turn: index,
-            isCurrent: index === combat.turn,
-            isRequesting: requesting,
-            spotlightOrder:
-              requestOrderIndex === 0 ? Infinity : requestOrderIndex,
-            userIsGM: game.user.isGM,
-          });
-        }
+          combatant.system?.spotlight ?? {};
+
+        const isCurrent = index === combat.turn;
+
+        const classes = [];
+        if (isCurrent) classes.push("active");
+        if (combatant.hidden) classes.push("invisible");
+        if (combatant.isDefeated) classes.push("defeated");
+
+        acc.push({
+          combatant,
+          turn: index,
+          isCurrent,
+          isRequesting: requesting,
+          spotlightOrder: requestOrderIndex || Infinity,
+          userIsGM: game.user.isGM,
+          cssClass: classes.join(" "),
+        });
+
         return acc;
       }, [])
       .sort((a, b) => {
@@ -166,7 +175,7 @@ export default class SpotlightTracker extends ApplicationV2 {
    * @private
    */
   async _renderTurns() {
-    const turns = this.prepareTurn();
+    const turns = this.prepareTurns();
 
     if (turns.length === 0) return "";
 
@@ -436,13 +445,13 @@ export default class SpotlightTracker extends ApplicationV2 {
       .to(anchor, {
         pointerEvents: "all",
         opacity: 1,
-        x: this.isPCTracker ? "4rem" : "-4rem",
+        x: this.isPCTracker ? "80%" : "-80%",
         duration: 0.5,
         ease: "ease.in",
         zIndex: 5,
       })
       .to(anchor, {
-        x: this.isPCTracker ? "4.3rem" : "-4.3rem",
+        x: this.isPCTracker ? "+=3" : "-=3",
         duration: 0.1,
         repeat: 5,
         yoyo: true,
