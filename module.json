@@ -21,28 +21,26 @@
   "readme": "README.md",
   "socket": true,
   "relationships": {
+    "systems": [
+      {
+        "id": "daggerheart",
+        "type": "system",
+        "compatibility": {
+          "minimum": "1.0.0",
+          "verified": "1.7.0"
+        }
+      }
+    ],
     "requires": [],
     "recommends": []
   },
-  "esmodules": [
-    "main.mjs"
-  ],
-  "scripts": [
-    "greensock/dist/gsap.min.js"
-  ],
-  "styles": [
-    "styles/main.css"
-  ],
+  "esmodules": ["main.mjs"],
+  "scripts": ["greensock/dist/gsap.min.js"],
+  "styles": ["styles/main.css"],
   "flags": {
     "hotReload": {
-      "extensions": [
-        "css",
-        "hbs"
-      ],
-      "paths": [
-        "styles/",
-        "templates/"
-      ]
+      "extensions": ["css", "hbs"],
+      "paths": ["styles/", "templates/"]
     }
   }
 }
