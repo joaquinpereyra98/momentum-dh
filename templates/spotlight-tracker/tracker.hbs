@@ -1,0 +1,23 @@
+{{#if current}}
+<div class="token-combatant active {{cssClass}}" data-turn="{{turn}}" data-flip-id="momentum-token-combatant-{{current.combatant.id}}"
+  data-combatant-id="{{current.combatant.id}}">
+  <img src="{{current.combatant.img}}" alt="{{current.combatant.name}}" data-action="combatantClick" class="combatant-img" />
+  <svg class="spotlight-svg" viewBox="28 28 310.5 132" xmlns="http://www.w3.org/2000/svg">
+    <defs>
+      <linearGradient id="momentum-dh-linear-gradient-spotlight" x1="0%" y1="0%" x2="100%" y2="0%"
+        gradientUnits="userSpaceOnUse">
+        <stop class="start-stop" stop-color="var(--start-color)" />
+        <stop class="stop-middle" offset="20%" stop-color="var(--start-color)" />
+        <stop class="end-stop" offset="100%" stop-color="var(--end-color)" stop-opacity="0" />
+      </linearGradient>
+    </defs>
+    <path fill="url(#momentum-dh-linear-gradient-spotlight)"
+      d="M338.5 100L94.0002 160L93.1464 159.995C57.0888 159.538 28 130.166 28 94C28 57.5492 57.5493 28 94.0002 28L338.5 88.0001V100Z" />
+  </svg>
+</div>
+{{/if}}
+<div class="list-container">
+  <ul class="turns-list unlist">
+    {{{turns}}}
+  </ul>
+</div>

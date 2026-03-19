@@ -3,6 +3,7 @@ import "@client/global.mjs";
 import Canvas from "@client/canvas/board.mjs";
 import * as GSAP from "@gsap/gsap-core";
 import FlipModule from "@gsap/Flip.js";
+import ObserverModule from "@gsap/Observer.js"
 
 type moduleApps = typeof import("./module/apps/_module.mjs");
 type moduleHooks = typeof import("./module/hooks/_module.mjs");
@@ -27,6 +28,7 @@ declare global {
 
   const gsap: typeof GSAP.gsap;
   const Flip: typeof FlipModule;
+  const Observer: typeof ObserverModule;
 
   /**
    * Momentum Module Global API

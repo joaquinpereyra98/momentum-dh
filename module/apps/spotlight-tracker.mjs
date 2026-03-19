@@ -4,6 +4,16 @@ const { ApplicationV2 } = foundry.applications.api;
 
 const SPOTLIGHT_TEMPLATES = `${TEMPLATES_PATH}/spotlight-tracker`;
 
+/**
+ * @typedef {Object} EtheriaTurn
+ * @property {Combatant} combatant       - The specific Combatant document.
+ * @property {number} turn               - The original index of the combatant in the combat.turns array.
+ * @property {boolean} isRequesting      - Whether the combatant is currently requesting the spotlight.
+ * @property {number} spotlightOrder     - The priority order for the spotlight (defaults to Infinity).
+ * @property {boolean} userIsGM          - Whether the current user viewing the tracker is a GM.
+ * @property {string} cssClass           - A string of CSS classes (e.g., "invisible", "defeated").
+ */
+
 /** The Spotlight Tracker */
 export default class SpotlightTracker extends ApplicationV2 {
   /* -------------------------------------------- */
@@ -13,7 +23,7 @@ export default class SpotlightTracker extends ApplicationV2 {
   /** @type {foundry.applications.types.ApplicationConfiguration} */
   static DEFAULT_OPTIONS = {
     id: `${MODULE_ID}-spotlight-tracker-{side}`,
-    tag: "ul",
+    tag: "div",
     classes: [MODULE_ID, "spotlight-tracker", "unlist"],
     window: {
       frame: false,
@@ -101,6 +111,39 @@ export default class SpotlightTracker extends ApplicationV2 {
    */
   #highlighted = null;
 
+  /**
+   *
+   * Returns the width of a token list item in pixels.
+   * @type {number}
+   */
+  get tokenSize() {
+    return gsap.getProperty(
+      this.element.querySelector(".turns-list .token-combatant"),
+      "width",
+    );
+  }
+
+  /**
+   * The current vertical position in pixels.
+   * @type {Number}
+   */
+  #currentY = 0;
+
+  /**
+   * The IntersectionObserver instance managing visibility logic for list items.
+   * @type {Observer}
+   * @private
+   */
+  #obs;
+
+  get #visibleCount() {
+    const { height } = this.element.getBoundingClientRect();
+    const { top } = this.element
+      .querySelector(".list-container")
+      .getBoundingClientRect();
+    return Math.floor((height - top) / this.tokenSize);
+  }
+
   /* -------------------------------------------- */
   /* Initialization                               */
   /* -------------------------------------------- */
@@ -121,43 +164,42 @@ export default class SpotlightTracker extends ApplicationV2 {
 
   /**
    * Prepares the turn data for the template
-   * @returns {Array<{combatant: foundry.documents.Combatant, isCurrent: Boolean, }>}
+   * @returns {{current: EtheriaTurn|null, turns: EtheriaTurn[]}}
    */
   prepareTurns() {
     const combat = this.activeCombat;
-    if (!combat) return [];
-
-    return combat.turns
-      .reduce((acc, combatant, index) => {
-        if (combatant.isNPC === this.isPCTracker || !combatant.visible)
-          return acc;
-
-        const { requesting = false, requestOrderIndex = 0 } =
-          combatant.system?.spotlight ?? {};
-
-        const isCurrent = index === combat.turn;
-
-        const classes = [];
-        if (isCurrent) classes.push("active");
-        if (combatant.hidden) classes.push("invisible");
-        if (combatant.isDefeated) classes.push("defeated");
-
-        acc.push({
-          combatant,
-          turn: index,
-          isCurrent,
-          isRequesting: requesting,
-          spotlightOrder: requestOrderIndex || Infinity,
-          userIsGM: game.user.isGM,
-          cssClass: classes.join(" "),
-        });
-
+    if (!combat) return { current: null, turns: [] };
+    const allTurns = combat.turns.reduce((acc, combatant, index) => {
+      if (combatant.isNPC === this.isPCTracker || !combatant.visible)
         return acc;
-      }, [])
-      .sort((a, b) => {
-        if (a.isCurrent !== b.isCurrent) return a.isCurrent ? -1 : 1;
-        return a.spotlightOrder - b.spotlightOrder;
+
+      const { requesting = false, requestOrderIndex = 0 } =
+        combatant.system?.spotlight ?? {};
+
+      const classes = [];
+      if (combatant.hidden) classes.push("invisible");
+      if (combatant.isDefeated) classes.push("defeated");
+
+      acc.push({
+        combatant,
+        turn: index,
+        isRequesting: requesting,
+        spotlightOrder: requestOrderIndex || Infinity,
+        userIsGM: game.user.isGM,
+        cssClass: classes.join(" "),
       });
+
+      return acc;
+    }, []);
+
+    const current = allTurns.find((t) => t.turn === combat.turn);
+    const others = allTurns
+      .filter((t) => t.turn !== combat.turn)
+      .sort((a, b) => a.spotlightOrder - b.spotlightOrder);
+    return {
+      current,
+      turns: others,
+    };
   }
 
   /* -------------------------------------------- */
@@ -166,7 +208,15 @@ export default class SpotlightTracker extends ApplicationV2 {
 
   /** @override */
   async _renderHTML(_context, _options) {
-    return await this._renderTurns();
+    const { current, turns } = await this._renderTurns();
+    const list = foundry.applications.handlebars.renderTemplate(
+      `${SPOTLIGHT_TEMPLATES}/tracker.hbs`,
+      {
+        turns,
+        current,
+      },
+    );
+    return list;
   }
 
   /**
@@ -175,7 +225,7 @@ export default class SpotlightTracker extends ApplicationV2 {
    * @private
    */
   async _renderTurns() {
-    const turns = this.prepareTurns();
+    const { current, turns } = this.prepareTurns();
 
     if (turns.length === 0) return "";
 
@@ -188,7 +238,10 @@ export default class SpotlightTracker extends ApplicationV2 {
       allowProtoPropertiesByDefault: true,
     };
 
-    return turns.map((turnData) => template(turnData, options)).join("");
+    return {
+      current,
+      turns: turns.map((turnData) => template(turnData, options)).join(""),
+    };
   }
 
   /* -------------------------------------------- */
@@ -199,7 +252,7 @@ export default class SpotlightTracker extends ApplicationV2 {
    * @param {HTMLElement} content
    */
   _replaceHTML(result, content, _options) {
-    const state = Flip.getState(content.children);
+    const state = Flip.getState(content.querySelectorAll(".token-combatant"));
 
     const orbitStates = new Map();
     content.querySelectorAll(".request-orbit").forEach((el) => {
@@ -229,7 +282,7 @@ export default class SpotlightTracker extends ApplicationV2 {
       ease: "power2.inOut",
       absolute: false,
       scale: true,
-      targets: content.children,
+      targets: content.querySelectorAll(".token-combatant"),
       onEnter: (elements) =>
         gsap.fromTo(elements, { opacity: 0 }, { opacity: 1, duration: 0.3 }),
       onLeave: (elements) => gsap.to(elements, { opacity: 0, duration: 0.3 }),
@@ -250,13 +303,28 @@ export default class SpotlightTracker extends ApplicationV2 {
       this.#listItems = element.querySelectorAll(".token-combatant");
 
       if (this.#listItems.length > 0) {
-        gsap.from(this.#listItems, {
-          x: this.isPCTracker ? "-5vw" : "5vw",
-          opacity: 0,
-          stagger: 0.2,
-          duration: 1,
-          ease: "back.out(1.2)",
-        });
+        const activeIdx = Math.round(Math.abs(this.#currentY) / this.tokenSize);
+
+        gsap.fromTo(
+          this.#listItems,
+          {
+            x: this.isPCTracker ? "-5vw" : "5vw",
+            opacity: 0,
+          },
+          {
+            opacity: (i, target) => {
+              const diff = i - activeIdx;
+              const isVisible =
+                target.classList.contains("active") ||
+                (diff >= 0 && diff <= this.#visibleCount);
+              const isPeek = diff === this.#visibleCount + 1;
+              return isVisible ? 1 : isPeek ? 0.3 : 0;
+            },
+            x: 0,
+            stagger: 0.2,
+            ease: "back.out(1.2)",
+          },
+        );
       }
     }
   }
@@ -267,9 +335,9 @@ export default class SpotlightTracker extends ApplicationV2 {
 
     if (!this.#listItems || this.#listItems.length === 0) return;
 
-    this._initSpotlightAnimation();
     this._initListItemInteractions();
     this._initOrbitAnimations();
+    this._initVirtualScroll();
 
     this.element.addEventListener(
       "pointerover",
@@ -290,21 +358,61 @@ export default class SpotlightTracker extends ApplicationV2 {
       );
   }
 
-  /**
-   * Animates the spotlight
-   */
-  _initSpotlightAnimation() {
-    const middleStop = this.element.querySelector(
-      "svg.spotlight-svg .stop-middle",
-    );
-    if (!middleStop) return;
+  _initVirtualScroll() {
+    const container = this.element.querySelector("div.list-container");
+    const ul = container.querySelector("ul.turns-list");
+    const listItems = ul.querySelectorAll("li.token-combatant");
 
-    gsap.to(middleStop, {
-      attr: { offset: "50%" },
-      duration: 1.5,
-      repeat: -1,
-      yoyo: true,
-      ease: "sine.inOut",
+    const maxScroll = Math.max(
+      0,
+      (listItems.length - this.#visibleCount) * this.tokenSize,
+    );
+
+    this.#currentY = this.#currentY || 0;
+    this.#obs?.kill();
+
+    const handleMove = ({ deltaY }) => {
+      const direction = Math.sign(deltaY);
+      const nextY = Math.clamp(
+        this.#currentY + direction * this.tokenSize,
+        -maxScroll,
+        0,
+      );
+
+      if (nextY === this.#currentY) return;
+      this.#currentY = nextY;
+
+      // Animate the list
+      gsap.to(ul, {
+        y: this.#currentY,
+        duration: 0.3,
+        ease: "power2.out",
+      });
+
+      // Determine items visibility
+      const activeIdx = Math.round(Math.abs(this.#currentY) / this.tokenSize);
+      listItems.forEach((li, i) => {
+        const diff = i - activeIdx;
+        const isVisible = diff >= 0 && diff < this.#visibleCount;
+        const isPeek = diff === this.#visibleCount;
+
+        gsap.to(li, {
+          opacity: isVisible ? 1 : isPeek ? 0.3 : 0,
+          pointerEvents: isVisible ? "auto" : "none",
+          duration: 0.3,
+          overwrite: true,
+        });
+      });
+    };
+
+    this.#obs = Observer.create({
+      target: container,
+      type: "wheel,touch,pointer",
+      onUp: handleMove,
+      onDown: handleMove,
+      wheelSpeed: -1,
+      preventDefault: true,
+      tolerance: 20,
     });
   }
 
@@ -312,21 +420,16 @@ export default class SpotlightTracker extends ApplicationV2 {
    * Sets up hover listeners for the list items
    */
   _initListItemInteractions() {
-    this.#listItems.forEach((li) => {
-      li.addEventListener("mouseenter", () =>
-        gsap.to(li, { scale: 1.2, duration: 0.2 }),
-      );
-      li.addEventListener("mouseleave", () =>
-        gsap.to(li, { scale: 1, duration: 0.2 }),
-      );
-
-      const anchor = li.querySelector(".spotlight-anchor");
-      if (anchor) {
-        const tl = this.#createAnchorHover(anchor);
-        li.addEventListener("mouseenter", () => tl.play());
-        li.addEventListener("mouseleave", () => tl.reverse());
-      }
-    });
+    this.element
+      .querySelectorAll("ul.turns-list li.token-combatant")
+      .forEach((li) => {
+        const anchor = li.querySelector(".spotlight-anchor");
+        if (anchor) {
+          const tl = this.#createAnchorHover(anchor);
+          li.addEventListener("mouseenter", () => tl.play());
+          li.addEventListener("mouseleave", () => tl.reverse());
+        }
+      });
   }
 
   /**
@@ -432,12 +535,7 @@ export default class SpotlightTracker extends ApplicationV2 {
   #createAnchorHover(anchor) {
     gsap.killTweensOf(anchor);
     gsap.set(anchor, {
-      xPercent: -50,
-      yPercent: -50,
-      x: 0,
       opacity: 0,
-      left: "50%",
-      top: "50%",
     });
 
     const tl = gsap
@@ -445,7 +543,7 @@ export default class SpotlightTracker extends ApplicationV2 {
       .to(anchor, {
         pointerEvents: "all",
         opacity: 1,
-        x: this.isPCTracker ? "80%" : "-80%",
+        xPercent: this.isPCTracker ? 100 : -100,
         duration: 0.5,
         ease: "ease.in",
         zIndex: 5,
