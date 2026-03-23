@@ -22,7 +22,6 @@
   }
 
   &.spotlight-tracker {
-    height: 75%;
     position: absolute;
     pointer-events: all;
     transition: transform 0.4s cubic-bezier(0.175, 0.885, 0.32, 1.275), right 0.3s ease;
@@ -30,7 +29,11 @@
 
     .list-container {
       padding: 0 5px;
-      max-height: calc(var(--token-size) * 7);
+      height: 60vh;
+
+      &:has(.token-combatant.active) {
+        height: calc(60vh - var(--token-size));
+      }
 
       ul.turns-list {
         display: flex;
@@ -95,6 +98,10 @@
         .combatant-img {
           transform: scale(1);
         }
+
+        .satellite {
+          transform: translateY(0px);
+        }
       }
 
       a.spotlight-anchor {
@@ -137,14 +144,14 @@
       }
 
       .satellite {
+        transition: transform 0.3s ease;
+        transform: translateY(5px);
         width: 0.9vw;
         height: 0.9vw;
         background-color: var(--primary-side-color);
         border-radius: 50%;
         border: 2px solid var(--secondary-side-color);
         box-shadow: 0 0 10px var(--secondary-side-color);
-        transform: scale(0);
-        opacity: 0;
       }
 
     }

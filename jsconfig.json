@@ -5,7 +5,7 @@
     "paths": {
       "@client/*": ["./foundry/client/*"],
       "@common/*": ["./foundry/common/*"],
-      "@gsap/*": ["./foundry/public/scripts/greensock/esm/*"]
+      "@gsap/*": ["./foundry/public/scripts/greensock/src/*"]
     }
   },
   "exclude": ["node_modules", "**/node_modules/*"],

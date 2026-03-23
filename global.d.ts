@@ -1,9 +1,9 @@
 /**FOUNDRY TYPES */
 import "@client/global.mjs";
 import Canvas from "@client/canvas/board.mjs";
-import * as GSAP from "@gsap/gsap-core";
-import FlipModule from "@gsap/Flip.js";
-import ObserverModule from "@gsap/Observer.js"
+import { gsap as gsapModule } from "@gsap/gsap-core";
+import * as FlipPlugin from "@gsap/Flip";
+import * as ObserverPuglin from "@gsap/Observer";
 
 type moduleApps = typeof import("./module/apps/_module.mjs");
 type moduleHooks = typeof import("./module/hooks/_module.mjs");
@@ -26,9 +26,11 @@ declare global {
    */
   const canvas: Canvas;
 
-  const gsap: typeof GSAP.gsap;
-  const Flip: typeof FlipModule;
-  const Observer: typeof ObserverModule;
+  const gsap: typeof gsapModule;
+  const Flip: typeof FlipPlugin.Flip;
+  type FlipState = typeof FlipPlugin.FlipState;
+
+  const Observer: typeof ObserverPuglin.Observer;
 
   /**
    * Momentum Module Global API

@@ -93,17 +93,20 @@ export default class SpotlightTracker extends ApplicationV2 {
   /* Properties & Getters                         */
   /* -------------------------------------------- */
 
-  /**@type {foundry.documents.Combat|null} */
-  get activeCombat() {
-    return game.combat;
-  }
-
   get isPCTracker() {
     return this.options.side === "left";
   }
 
-  /**@type {HTMLCollection} */
-  #listItems;
+  /**@type {HTMLLIElement[]} */
+  #listItems = [];
+
+  /**@type {HTMLDivElement|null} */
+  #activeItem = null;
+
+  /**@type {HTMLElement[]} */
+  get #allItems() {
+    return [this.#activeItem, ...this.#listItems].filter(Boolean);
+  }
 
   /**
    * Record a reference to the currently highlighted Token.
@@ -117,10 +120,10 @@ export default class SpotlightTracker extends ApplicationV2 {
    * @type {number}
    */
   get tokenSize() {
-    return gsap.getProperty(
-      this.element.querySelector(".turns-list .token-combatant"),
-      "width",
-    );
+    /**@type {HTMLElement} */
+    const el = this.element?.querySelector(".token-combatant:not(.active)");
+    if (!el) return 65;
+    return el.offsetHeight;
   }
 
   /**
@@ -134,14 +137,13 @@ export default class SpotlightTracker extends ApplicationV2 {
    * @type {Observer}
    * @private
    */
-  #obs;
+  #observer;
 
   get #visibleCount() {
-    const { height } = this.element.getBoundingClientRect();
-    const { top } = this.element
-      .querySelector(".list-container")
-      .getBoundingClientRect();
-    return Math.floor((height - top) / this.tokenSize);
+    const container = this.element?.querySelector("div.list-container");
+    if (!container) return 5;
+    const containerHeight = container.clientHeight;
+    return Math.max(1, Math.floor(containerHeight / this.tokenSize));
   }
 
   /* -------------------------------------------- */
@@ -167,7 +169,7 @@ export default class SpotlightTracker extends ApplicationV2 {
    * @returns {{current: EtheriaTurn|null, turns: EtheriaTurn[]}}
    */
   prepareTurns() {
-    const combat = this.activeCombat;
+    const combat = game.combat;
     if (!combat) return { current: null, turns: [] };
     const allTurns = combat.turns.reduce((acc, combatant, index) => {
       if (combatant.isNPC === this.isPCTracker || !combatant.visible)
@@ -208,40 +210,24 @@ export default class SpotlightTracker extends ApplicationV2 {
 
   /** @override */
   async _renderHTML(_context, _options) {
-    const { current, turns } = await this._renderTurns();
-    const list = foundry.applications.handlebars.renderTemplate(
-      `${SPOTLIGHT_TEMPLATES}/tracker.hbs`,
-      {
-        turns,
-        current,
-      },
-    );
-    return list;
-  }
-
-  /**
-   * Internal helper to fetch template and join HTML strings.
-   * @returns {Promise<String>}
-   * @private
-   */
-  async _renderTurns() {
     const { current, turns } = this.prepareTurns();
-
     if (turns.length === 0) return "";
-
     const template = await foundry.applications.handlebars.getTemplate(
       `${SPOTLIGHT_TEMPLATES}/token-combatant.hbs`,
     );
-
     const options = {
       allowProtoMethodsByDefault: true,
       allowProtoPropertiesByDefault: true,
     };
 
-    return {
-      current,
-      turns: turns.map((turnData) => template(turnData, options)).join(""),
-    };
+    const turnsHtml = turns
+      .map((turnData) => template(turnData, options))
+      .join("");
+
+    return await foundry.applications.handlebars.renderTemplate(
+      `${SPOTLIGHT_TEMPLATES}/tracker.hbs`,
+      { turns: turnsHtml, current },
+    );
   }
 
   /* -------------------------------------------- */
@@ -266,23 +252,20 @@ export default class SpotlightTracker extends ApplicationV2 {
       gsap.set(newOrbits, {
         rotation: (_, target) => orbitStates.get(target.dataset.orbitId),
       });
-
-      gsap.set(content.querySelectorAll(".request-orbit .satellite"), {
-        opacity: 0.8,
-        scale: 0.9,
-      });
     }
 
-    this.#listItems = content.querySelectorAll(".token-combatant");
+    this.#listItems =
+      Array.from(content.querySelectorAll("li.token-combatant")) ?? [];
+    this.#activeItem = content.querySelector("div.token-combatant.active");
 
-    if (!this.#listItems || this.#listItems.length === 0) return;
+    if (this.#allItems.length === 0) return;
 
     Flip.from(state, {
       duration: 0.5,
       ease: "power2.inOut",
       absolute: false,
       scale: true,
-      targets: content.querySelectorAll(".token-combatant"),
+      targets: this.#allItems,
       onEnter: (elements) =>
         gsap.fromTo(elements, { opacity: 0 }, { opacity: 1, duration: 0.3 }),
       onLeave: (elements) => gsap.to(elements, { opacity: 0, duration: 0.3 }),
@@ -291,49 +274,47 @@ export default class SpotlightTracker extends ApplicationV2 {
 
   /* -------------------------------------------- */
 
-  /**@override */
+  /** @override */
   _insertElement(element) {
     const existing = document.getElementById(element.id);
-    if (existing) existing.replaceWith(element);
-    else {
-      const parent =
-        document.querySelector(this.options.parent) ?? document.body;
+    const parent = document.querySelector(this.options.parent) ?? document.body;
+
+    if (existing) {
+      existing.replaceWith(element);
+    } else {
       parent.append(element);
-
-      this.#listItems = element.querySelectorAll(".token-combatant");
-
-      if (this.#listItems.length > 0) {
-        const activeIdx = Math.round(Math.abs(this.#currentY) / this.tokenSize);
-
-        gsap.fromTo(
-          this.#listItems,
-          {
-            x: this.isPCTracker ? "-5vw" : "5vw",
-            opacity: 0,
-          },
-          {
-            opacity: (i, target) => {
-              const diff = i - activeIdx;
-              const isVisible =
-                target.classList.contains("active") ||
-                (diff >= 0 && diff <= this.#visibleCount);
-              const isPeek = diff === this.#visibleCount + 1;
-              return isVisible ? 1 : isPeek ? 0.3 : 0;
-            },
-            x: 0,
-            stagger: 0.2,
-            ease: "back.out(1.2)",
-          },
-        );
-      }
     }
+
+    const getOpacity = (i) => {
+      const diff = i - Math.round(Math.abs(this.#currentY) / this.tokenSize);
+      if (diff >= 0 && diff < this.#visibleCount) return 1;
+      return diff === this.#visibleCount ? 0.3 : 0;
+    };
+
+    if (existing) return gsap.set(this.#listItems, { opacity: getOpacity });
+
+    const xOffset = this.isPCTracker ? "-5vw" : "5vw";
+    const tl = gsap.timeline({
+      defaults: { duration: 0.5, ease: "back.out(1.2)" },
+    });
+
+    if (this.#activeItem) {
+      tl.from(this.#activeItem, { x: xOffset, opacity: 0 });
+    }
+
+    tl.fromTo(
+      this.#listItems,
+      { x: xOffset, opacity: 0 },
+      { x: 0, opacity: getOpacity, stagger: 0.2 },
+      "-=0.2",
+    );
   }
 
   /**@inheritdoc */
   async _onRender(context, options) {
     await super._onRender(context, options);
 
-    if (!this.#listItems || this.#listItems.length === 0) return;
+    if (this.#allItems.length === 0) return;
 
     this._initListItemInteractions();
     this._initOrbitAnimations();
@@ -341,12 +322,12 @@ export default class SpotlightTracker extends ApplicationV2 {
 
     this.element.addEventListener(
       "pointerover",
-      this._onCombatantHoverIn.bind(this),
+      (e) => this._onCombatantHover(e, true),
       { passive: true },
     );
     this.element.addEventListener(
       "pointerout",
-      this._onCombatantHoverOut.bind(this),
+      (e) => this._onCombatantHover(e, false),
       { passive: true },
     );
     this.element
@@ -361,15 +342,15 @@ export default class SpotlightTracker extends ApplicationV2 {
   _initVirtualScroll() {
     const container = this.element.querySelector("div.list-container");
     const ul = container.querySelector("ul.turns-list");
-    const listItems = ul.querySelectorAll("li.token-combatant");
+    const totalItems = ul.querySelectorAll("li.token-combatant")?.length;
 
     const maxScroll = Math.max(
       0,
-      (listItems.length - this.#visibleCount) * this.tokenSize,
+      (totalItems - this.#visibleCount) * this.tokenSize,
     );
 
     this.#currentY = this.#currentY || 0;
-    this.#obs?.kill();
+    this.#observer?.kill();
 
     const handleMove = ({ deltaY }) => {
       const direction = Math.sign(deltaY);
@@ -382,30 +363,15 @@ export default class SpotlightTracker extends ApplicationV2 {
       if (nextY === this.#currentY) return;
       this.#currentY = nextY;
 
-      // Animate the list
       gsap.to(ul, {
         y: this.#currentY,
-        duration: 0.3,
+        duration: 0.4,
         ease: "power2.out",
-      });
-
-      // Determine items visibility
-      const activeIdx = Math.round(Math.abs(this.#currentY) / this.tokenSize);
-      listItems.forEach((li, i) => {
-        const diff = i - activeIdx;
-        const isVisible = diff >= 0 && diff < this.#visibleCount;
-        const isPeek = diff === this.#visibleCount;
-
-        gsap.to(li, {
-          opacity: isVisible ? 1 : isPeek ? 0.3 : 0,
-          pointerEvents: isVisible ? "auto" : "none",
-          duration: 0.3,
-          overwrite: true,
-        });
+        onUpdate: this._refreshVisibility.bind(this),
       });
     };
 
-    this.#obs = Observer.create({
+    this.#observer = Observer.create({
       target: container,
       type: "wheel,touch,pointer",
       onUp: handleMove,
@@ -413,6 +379,24 @@ export default class SpotlightTracker extends ApplicationV2 {
       wheelSpeed: -1,
       preventDefault: true,
       tolerance: 20,
+    });
+  }
+
+  _refreshVisibility() {
+    const liElements = this.element.querySelectorAll(
+      "ul.turns-list li.token-combatant",
+    );
+    const itemSize = this.tokenSize;
+    const visibleCount = this.#visibleCount;
+    const activeIdx = Math.round(Math.abs(this.#currentY) / itemSize);
+    const isVisible = (diff) => diff >= 0 && diff < visibleCount;
+    const isPeek = (diff) => diff === visibleCount;
+
+    gsap.to(liElements, {
+      opacity: (i) =>
+        isVisible(i - activeIdx) ? 1 : isPeek(i - activeIdx) ? 0.3 : 0,
+      pointerEvents: (i) => (isVisible(i - activeIdx) ? "auto" : "none"),
+      duration: 0.3,
     });
   }
 
@@ -437,10 +421,6 @@ export default class SpotlightTracker extends ApplicationV2 {
    */
   _initOrbitAnimations() {
     const orbits = this.element.querySelectorAll(".request-orbit");
-    const satellites = this.element.querySelectorAll(
-      ".request-orbit .satellite",
-    );
-
     if (orbits.length) {
       gsap.to(orbits, {
         rotation: "+=360",
@@ -448,29 +428,15 @@ export default class SpotlightTracker extends ApplicationV2 {
         repeat: -1,
         ease: "none",
       });
-      const tl = gsap.timeline();
-      tl.to(satellites, {
-        scale: 0.9,
-        opacity: 0.8,
-        duration: 1.5,
-        ease: "back.out(2)",
-      }).to(satellites, {
-        scale: 1.1,
-        opacity: 1,
-        duration: 0.7,
-        repeat: -1,
-        yoyo: true,
-        ease: "sine.inOut",
-      });
     }
   }
 
   /**@override */
   async _preClose(options) {
     await super._preClose(options);
-    if (!this.#listItems || this.#listItems.length === 0) return;
+    if (this.#allItems.length === 0) return;
 
-    await gsap.to(Array.from(this.#listItems).toReversed(), {
+    await gsap.to(this.#allItems.toReversed(), {
       x: this.isPCTracker ? "-5vw" : "5vw",
       opacity: 0,
       stagger: 0.2,
@@ -484,17 +450,21 @@ export default class SpotlightTracker extends ApplicationV2 {
   /* -------------------------------------------- */
 
   /**
-   * Handle hovering over a combatant in the tracker.
+   * Handle hovering in/out a combatant in the tracker.
    * @param {PointerEvent} event  The triggering event.
-   * @protected
+   * @param {boolean} hoverIn     Whether we are hovering in.
    */
-  _onCombatantHoverIn(event) {
+  _onCombatantHover(event, hoverIn) {
+    if (!hoverIn) {
+      this.#highlighted?._onHoverOut(event);
+      this.#highlighted = null;
+      return;
+    }
     const { combatantId } =
       event.target.closest(".token-combatant[data-combatant-id]")?.dataset ??
       {};
     if (!canvas.ready || !combatantId) return;
-    const combatant = this.activeCombat.combatants.get(combatantId);
-    const token = combatant.token?.object;
+    const token = game.combat?.combatants.get(combatantId)?.token?.object;
     if (token && token._canHover(game.user, event) && token.visible) {
       token._onHoverIn(event, { hoverOutOthers: true });
       this.#highlighted = token;
@@ -502,24 +472,13 @@ export default class SpotlightTracker extends ApplicationV2 {
   }
 
   /**
-   * Handle hovering out a combatant in the tracker.
-   * @param {PointerEvent} event  The triggering event.
-   * @protected
-   */
-  _onCombatantHoverOut(event) {
-    this.#highlighted?._onHoverOut(event);
-    this.#highlighted = null;
-  }
-
-  /**
    * Handle a double click to open the combatant's actor sheet.
    * @param {PointerEvent} event
-   * @protected
    */
   _onCombatantDblClick(event) {
     const target = event.target.closest("[data-combatant-id]");
     const { combatantId } = target?.dataset ?? {};
-    const combatant = this.activeCombat.combatants.get(combatantId);
+    const combatant = game.combat.combatants.get(combatantId);
     if (!combatant?.actor) return;
 
     if (combatant.actor.testUserPermission(game.user, "OBSERVER")) {
@@ -578,7 +537,7 @@ export default class SpotlightTracker extends ApplicationV2 {
   static #onCombatantClick(_, target) {
     const { combatantId } =
       target.closest("[data-combatant-id]")?.dataset ?? {};
-    const combatant = this.activeCombat.combatants.get(combatantId);
+    const combatant = game.combat.combatants.get(combatantId);
 
     const token = combatant?.token?.object;
     if (!token) return;
@@ -594,14 +553,14 @@ export default class SpotlightTracker extends ApplicationV2 {
   static async #onRequestSpotlight(_, target) {
     const container = target.closest("[data-combatant-id]");
     const combatantId = container?.dataset.combatantId;
-    const combatant = this.activeCombat.combatants.get(combatantId);
+    const combatant = game.combat.combatants.get(combatantId);
     if (!combatant) return;
 
     const isRequesting = !combatant.system.spotlight.requesting;
 
     let requestOrderIndex = 0;
     if (isRequesting) {
-      const turns = this.activeCombat.turns ?? [];
+      const turns = game.combat.turns ?? [];
       const maxIndex = turns.reduce(
         (max, c) =>
           !c.isNPC
