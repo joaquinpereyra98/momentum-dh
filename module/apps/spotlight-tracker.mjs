@@ -1,4 +1,4 @@
-import { MODULE_ID, TEMPLATES_PATH } from "../constants.mjs";
+import { MODULE_ID, SETTINGS, TEMPLATES_PATH } from "../constants.mjs";
 
 const { ApplicationV2 } = foundry.applications.api;
 
@@ -60,10 +60,18 @@ export default class SpotlightTracker extends ApplicationV2 {
    * @returns {Promise<SpotlightTracker[]>} A promise that resolves when all renders complete.
    */
   static async renderAll(options = {}) {
-    const tasks = Array.from(this.instances.values(), (app) =>
-      app.render(options),
+    const showPlayers = game.settings.get(MODULE_ID, SETTINGS.showPlayers);
+    const showAdversaries = game.settings.get(
+      MODULE_ID,
+      SETTINGS.showAdversaries,
     );
-    return Promise.all(tasks);
+
+    const promises = Array.from(this.instances.values(), (app) => {
+      const isVisible = app.isPCTracker ? showPlayers : showAdversaries;
+      const force = options.force && isVisible;
+      return app.render({ ...options, force });
+    });
+    return Promise.all(promises);
   }
 
   /**
