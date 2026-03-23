@@ -1,17 +1,18 @@
 import { Flip, Observer } from "/scripts/greensock/esm/all.js";
 import * as apps from "./module/apps/_module.mjs";
 import * as hooks from "./module/hooks/_module.mjs";
-import { MODULE_ID, SETTINGS, SPOTLIGHT_TRACKER_ID } from "./module/constants.mjs";
+import { MODULE_ID, SPOTLIGHT_TRACKER_ID } from "./module/constants.mjs";
 import registerSettings from "./module/settings.mjs";
 
 
 Hooks.on("init", () => {
   gsap.registerPlugin(Flip);
-  gsap.registerPlugin(Observer);
+  gsap.registerPlugin(Observer);  
 
   const moduleData = game.modules.get(MODULE_ID);
 
   moduleData.api = {
+    gsap: {Flip, Observer},
     apps: { ...apps },
   };
 

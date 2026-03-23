@@ -38,5 +38,9 @@ declare global {
   var momentum: {
     apps: moduleApps;
     hooks: moduleHooks;
+    gsap: {
+      Flip: typeof FlipPlugin.Flip;
+      Observer: typeof ObserverPuglin.Observer;
+    }
   };
 }

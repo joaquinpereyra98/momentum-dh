@@ -142,7 +142,7 @@ export default class SpotlightTracker extends ApplicationV2 {
 
   /**
    * The IntersectionObserver instance managing visibility logic for list items.
-   * @type {Observer}
+   * @type {momentum.gsap.Observer}
    * @private
    */
   #observer;
@@ -246,7 +246,7 @@ export default class SpotlightTracker extends ApplicationV2 {
    * @param {HTMLElement} content
    */
   _replaceHTML(result, content, _options) {
-    const state = Flip.getState(content.querySelectorAll(".token-combatant"));
+    const state = momentum.gsap.Flip.getState(content.querySelectorAll(".token-combatant"));
 
     const orbitStates = new Map();
     content.querySelectorAll(".request-orbit").forEach((el) => {
@@ -268,7 +268,7 @@ export default class SpotlightTracker extends ApplicationV2 {
 
     if (this.#allItems.length === 0) return;
 
-    Flip.from(state, {
+    momentum.gsap.Flip.from(state, {
       duration: 0.5,
       ease: "power2.inOut",
       absolute: false,
@@ -379,7 +379,7 @@ export default class SpotlightTracker extends ApplicationV2 {
       });
     };
 
-    this.#observer = Observer.create({
+    this.#observer = momentum.gsap.Observer.create({
       target: container,
       type: "wheel,touch,pointer",
       onUp: handleMove,
