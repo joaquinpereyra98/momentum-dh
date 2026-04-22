@@ -26,6 +26,7 @@
     pointer-events: all;
     transition: transform 0.4s cubic-bezier(0.175, 0.885, 0.32, 1.275), right 0.3s ease;
     --color-shadow-primary: var(--primary-side-color);
+    pointer-events: none;
 
     .list-container {
       padding: 0 5px;
@@ -46,6 +47,7 @@
       position: relative;
       display: flex;
       align-items: stretch;
+      pointer-events: all;
 
       .combatant-img {
         --size: var(--token-size);

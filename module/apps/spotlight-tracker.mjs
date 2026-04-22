@@ -67,18 +67,20 @@ export default class SpotlightTracker extends ApplicationV2 {
     );
 
     const promises = Array.from(this.instances.values(), (app) => {
+      console.log(app.isPCTracker ? "PC TRACKER" : "NPC TRACKER");
       const { current, turns } = app.prepareTurns();
+      console.log("END prepareTurns", { current, turns });
       const hasContent = !!(current || turns.length);
       const isVisibleSetting = app.isPCTracker ? showPlayers : showAdversaries;
       const shouldBeVisible = isVisibleSetting && hasContent;
 
-      if (!shouldBeVisible && app.state === this.RENDER_STATES.RENDERED) {
+      if (shouldBeVisible) return app.render({ force: true });
+      if (
+        !shouldBeVisible &&
+        app.state > app.state === this.RENDER_STATES.RENDERED
+      )
         return app.close();
-      }
-
-      return shouldBeVisible
-        ? app.render({ ...options, force: options.force ?? true })
-        : Promise.resolve();
+      return Promise.resolve();
     });
     return Promise.all(promises);
   }
@@ -215,6 +217,7 @@ export default class SpotlightTracker extends ApplicationV2 {
     const others = allTurns
       .filter((t) => t.turn !== combat.turn)
       .sort((a, b) => a.spotlightOrder - b.spotlightOrder);
+    console.log("prepareTurns running", { allTurns, current, others });
     return {
       current,
       turns: others,
@@ -337,6 +340,12 @@ export default class SpotlightTracker extends ApplicationV2 {
     }
   }
 
+  /** @inheritDoc */
+  async _onFirstRender(context, options) {
+    await super._onFirstRender(context, options);
+    game.combat.apps[this.id] = this;
+  }
+
   /**@inheritdoc */
   async _onRender(context, options) {
     await super._onRender(context, options);
@@ -367,6 +376,12 @@ export default class SpotlightTracker extends ApplicationV2 {
           passive: true,
         }),
       );
+  }
+
+  /** @inheritDoc */
+  _onClose(options) {
+    super._onClose(options);
+    delete game.combat.apps[this.id];
   }
 
   _initVirtualScroll() {

@@ -4,15 +4,14 @@ import * as hooks from "./module/hooks/_module.mjs";
 import { MODULE_ID, SPOTLIGHT_TRACKER_ID } from "./module/constants.mjs";
 import registerSettings from "./module/settings.mjs";
 
-
 Hooks.on("init", () => {
   gsap.registerPlugin(Flip);
-  gsap.registerPlugin(Observer);  
+  gsap.registerPlugin(Observer);
 
   const moduleData = game.modules.get(MODULE_ID);
 
   moduleData.api = {
-    gsap: {Flip, Observer},
+    gsap: { Flip, Observer },
     apps: { ...apps },
   };
 
@@ -25,12 +24,13 @@ Hooks.on("init", () => {
 });
 
 Hooks.on("ready", () => {
-  const left = momentum.apps.SpotlightTracker.create({
+  const { SpotlightTracker } = momentum.apps;
+  const left = SpotlightTracker.create({
     side: "left",
     parent: "#ui-left-column-2",
     classes: ["left-zone"],
   });
-  const right = momentum.apps.SpotlightTracker.create({
+  const right = SpotlightTracker.create({
     side: "right",
     parent: "#ui-right-column-1",
     classes: ["right-zone"],
@@ -39,32 +39,21 @@ Hooks.on("ready", () => {
   ui[left.id] = left;
   ui[right.id] = right;
 
-  if (game.combat) momentum.apps.SpotlightTracker.renderAll({ force: true });
+  if (game.combat) SpotlightTracker.renderAll({ force: true });
 });
 
 /**
- *
- * @param {foundry.documents.Combat|foundry.documents.Combatant} document
+ * @param {foundry.documents.Combat} combat
  */
-const renderSpotlight = (document) => {
+const handleCombatChange = (combat) => {
   const { SpotlightTracker } = momentum.apps;
-  const isRendered = SpotlightTracker.isRendered;
-  const combat =
-    document instanceof foundry.documents.Combat ? document : document.combat;
-  if (combat === game.combat)
-    SpotlightTracker.renderAll({ force: !isRendered });
+
+  if (combat === game.combat) SpotlightTracker.renderAll({ force: true });
   if (!game.combat) SpotlightTracker.closeAll();
 };
 
-[
-  "createCombatant",
-  "deleteCombatant",
-  "updateCombatant",
-  "createCombat",
-  "deleteCombat",
-  "updateCombat",
-].forEach((hook) => {
-  Hooks.on(hook, renderSpotlight);
-});
+["createCombat", "deleteCombat"].forEach((hook) =>
+  Hooks.on(hook, handleCombatChange),
+);
 
 Hooks.on("renderCombatTracker", hooks.onRenderCombatTracker);
